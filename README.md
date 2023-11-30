@@ -2,13 +2,15 @@
 
 ## Imagunet
 
+![Imagunet Logo](https://www.imagunet.com/wp-content/uploads/2021/02/Imagunet-Technology.png)
+
 Bienvenido a `ODBC-Installer`, una herramienta desarrollada por [Imagunet](https://www.imagunet.com/) para simplificar la instalación de controladores ODBC.
 
 ## Resumen de Imagunet
 
 Imagunet es una empresa líder en el desarrollo de soluciones tecnológicas innovadoras. Nos especializamos en proporcionar herramientas que facilitan el manejo y la implementación de tecnologías clave para la eficiencia empresarial.
 
-## Funciones
+## 🚀 Funciones
 
 `ODBC-Installer` simplifica el proceso de instalación de controladores ODBC, proporcionando una solución fácil de usar y compatible con diversas distribuciones de Linux.
 
@@ -16,11 +18,11 @@ Imagunet es una empresa líder en el desarrollo de soluciones tecnológicas inno
   
 - **Instalación de Controladores:** Facilita la instalación de los últimos controladores ODBC, descargándolos en línea o utilizando paquetes locales incluidos.
 
-## Donde Puede Ejecutarse
+## 🌐 Donde Puede Ejecutarse
 
 `ODBC-Installer` puede ejecutarse en cualquier distribución de Linux compatible con los requisitos del script.
 
-## Limitaciones
+## 🚧 Limitaciones
 
 - **Compatibilidad:** Actualmente, el script está diseñado para ejecutarse en distribuciones de Linux y puede tener limitaciones en otros sistemas operativos.
 
@@ -28,13 +30,13 @@ Imagunet es una empresa líder en el desarrollo de soluciones tecnológicas inno
 
 ---
 
-**Nota:** Asegúrate de revisar la documentación específica en el directorio `docs/` para obtener detalles sobre la instalación y el uso.
+📝 **Nota:** Asegúrate de revisar la documentación específica en el directorio `docs/` para obtener detalles sobre la instalación y el uso.
 
-## Contribución
+## 🤝 Contribución
 
 ¡Contribuciones son bienvenidas! Si deseas contribuir, sigue los pasos en [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Licencia
+## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
 
@@ -70,7 +72,7 @@ Imagunet is a leading company in the development of innovative technological sol
 
 ---
 
-**Note:** Be sure to check the specific documentation in the `docs/` directory for details on installation and usage.
+📝 **Note:** Be sure to check the specific documentation in the `docs/` directory for details on installation and usage.
 
 ## 🤝 Contribution
 
