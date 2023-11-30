@@ -37,3 +37,45 @@ Imagunet es una empresa líder en el desarrollo de soluciones tecnológicas inno
 ## Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
+
+---
+
+# ODBC-Installer
+
+## Imagunet
+
+Welcome to `ODBC-Installer`, a tool developed by [Imagunet](https://www.imagunet.com/) to streamline the installation of ODBC drivers.
+
+## Imagunet Overview
+
+Imagunet is a leading company in the development of innovative technological solutions. We specialize in providing tools that simplify the management and implementation of key technologies for business efficiency.
+
+## 🚀 Features
+
+`ODBC-Installer` simplifies the process of installing ODBC drivers, providing an easy-to-use solution compatible with various Linux distributions.
+
+- **Linux Detection:** Automatically identifies whether the operating system is Linux.
+  
+- **Driver Installation:** Facilitates the installation of the latest ODBC drivers, either by downloading them online or using included local packages.
+
+## 🌐 Where It Can Run
+
+`ODBC-Installer` can be executed on any Linux distribution that meets the script's requirements.
+
+## 🚧 Limitations
+
+- **Compatibility:** Currently, the script is designed to run on Linux distributions and may have limitations on other operating systems.
+
+- **Internet Connection:** An internet connection is required to download the latest drivers online.
+
+---
+
+**Note:** Be sure to check the specific documentation in the `docs/` directory for details on installation and usage.
+
+## 🤝 Contribution
+
+Contributions are welcome! If you'd like to contribute, follow the steps outlined in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
