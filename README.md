@@ -1,7 +1,5 @@
 # ODBC-Installer
 
-## Imagunet
-
 <img src="https://www.imagunet.com/wp-content/uploads/2021/02/Imagunet-Technology.png" alt="Imagunet Logo" width="200"/>
 
 Bienvenido a `ODBC-Installer`, una herramienta desarrollada por [Imagunet](https://www.imagunet.com/) para simplificar la instalación de controladores ODBC.
