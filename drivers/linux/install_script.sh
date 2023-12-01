@@ -22,8 +22,23 @@ check_internet_connection() {
     fi
 }
 
+# Function to detect Linux distribution
+detect_linux_distribution() {
+    if [ -f "/etc/os-release" ]; then
+        . "/etc/os-release"
+        LINUX_DISTRIBUTION=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
+        echo "Detected Linux distribution: $LINUX_DISTRIBUTION"
+    else
+        echo "Unable to detect Linux distribution."
+        exit 1
+    fi
+}
+
 # Call the function to check internet connection
 check_internet_connection
+
+# Call the function to detect Linux distribution
+detect_linux_distribution
 
 
 
