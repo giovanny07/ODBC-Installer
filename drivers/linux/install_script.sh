@@ -63,17 +63,79 @@ install_package_if_not_present() {
     fi
 }
 
-# Function to check and update repositories, and install unixODBC if not present
-check_and_install_unixodbc() {
-    update_repositories
-    install_package_if_not_present "unixODBC"
+# Function to uninstall a package
+uninstall_package() {
+    PACKAGE_NAME=$1
+    echo "Removing $PACKAGE_NAME..."
+    if command -v apt &> /dev/null; then
+        sudo apt-get remove $PACKAGE_NAME
+    elif command -v yum &> /dev/null; then
+        sudo yum remove $PACKAGE_NAME
+    else
+        echo "Unsupported package manager. Please add the necessary checks for your package manager."
+        exit 1
+    fi
 }
 
-# Call the function to check internet connection
-check_internet_connection
+# Function to check and update repositories, and install/uninstall a package if not present
+check_and_manage_package() {
+    update_repositories
+    if [ "$REMOVE_PACKAGE" == "true" ]; then
+        uninstall_package "$PACKAGE_TO_REMOVE"
+    else
+        install_package_if_not_present "$PACKAGE_TO_INSTALL"
+    fi
+}
 
-# Call the function to check and install unixODBC
-check_and_install_unixodbc
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --remove)
+            REMOVE_PACKAGE="true"
+            shift
+            PACKAGE_TO_REMOVE="$1"
+            ;;
+        --install)
+            REMOVE_PACKAGE="false"
+            shift
+            PACKAGE_TO_INSTALL="$1"
+            ;;
+        --install-db-engines)
+            shift
+            INSTALL_DB_ENGINES=($@)
+            break
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# Install selected database engines
+if [ "$INSTALL_DB_ENGINES" ]; then
+    for DB_ENGINE in "${INSTALL_DB_ENGINES[@]}"; do
+        case $DB_ENGINE in
+            "MariaDB")
+                install_package_if_not_present "unixODBC"
+                ;;
+            "PostgreSQL")
+                install_package_if_not_present "unixodbc"
+                ;;
+            "SQLServer")
+                install_package_if_not_present "unixODBC"
+                ;;
+            "OracleDB")
+                install_package_if_not_present "unixODBC"
+                ;;
+            *)
+                echo "Unsupported database engine specified: $DB_ENGINE"
+                exit 1
+                ;;
+        esac
+    done
+fi
 
 
 
