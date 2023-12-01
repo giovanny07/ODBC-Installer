@@ -233,15 +233,16 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
             "mariadb")
                 if [ "${MARIADB_VERSIONS[$i]}" ]; then
                     install_package_if_not_present "unixODBC"
+                    install_package_if_not_present "unixodbc"
                     download_specific_mariadb_version "${MARIADB_VERSIONS[$i]}"
                 else
                     log_message "No version specified for MariaDB ODBC driver. Using a default version or display an error message."
-                    install_package_if_not_present "unixODBC"
                     download_latest_or_local_mariadb_odbc
                 fi
                 ;;
             "postgresql")
                 if [ "${POSTGRESQL_VERSIONS[$i]}" ]; then
+                    install_package_if_not_present "unixODBC"
                     install_package_if_not_present "unixodbc"
                 else
                     log_message "No version specified for PostgreSQL ODBC driver. Using a default version or display an error message."
@@ -250,6 +251,7 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
             "oracledb")
                 if [ "${ORACLEDB_VERSIONS[$i]}" ]; then
                     install_package_if_not_present "unixODBC"
+                    install_package_if_not_present "unixodbc"
                 else
                     log_message "No version specified for OracleDB ODBC driver. Using a default version or display an error message."
                 fi
@@ -261,6 +263,3 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
         esac
     done
 fi
-
-
-
