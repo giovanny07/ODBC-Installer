@@ -49,47 +49,6 @@ check_internet_connection() {
     fi
 }
 
-# Function to detect Linux distribution and version
-download_latest_or_local_mariadb_odbc() {
-    check_jq_installed
-    detect_linux_distribution  # Asegúrate de que esta función está disponible y es correcta
-    if check_internet_connection; then
-        MARIADB_ODBC_VERSION=$(curl -s https://api.github.com/repos/mariadb-corporation/mariadb-connector-odbc/tags | jq -r '.[] | .name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-release)?$' | sort -V | tail -n 1)
-        VERSION_FILTER=$(echo "$MARIADB_ODBC_VERSION" | cut -d. -f1,2)
-        PATH_HTML_1=$(curl -s https://dlm.mariadb.com/browse/odbc_connector/ | awk -v target="$TARGET_VERSION" -v filter="$VERSION_FILTER" -F'["/]' '$0 ~ filter && $5 ~ target {print $5; exit}')
-        PATH_HTML_2=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/" | grep -oP 'href="/browse/odbc_connector/'"$PATH_HTML_1"'/\K\d+' | grep -oP '\d+' | sort -n | tail -n 1)
-        FILE_LIST=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/")
-
-        log_message "Downloading MariaDB ODBC driver version $MARIADB_ODBC_VERSION for $LINUX_DISTRIBUTION $LINUX_VERSION..."
-
-        # Agregamos lógica para seleccionar el archivo correcto según el sistema operativo
-        case $LINUX_DISTRIBUTION in
-            "ubuntu")
-                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
-                ;;
-            "rocky" | "almalinux" | "rhel" | "ol" | "centos")
-                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
-                ;;
-            *)  # Añade casos adicionales para otras distribuciones según sea necesario
-                log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
-                exit 1
-                ;;
-        esac
-
-        if [ -n "$DOWNLOAD_FILE" ]; then
-            log_message "Downloading $DOWNLOAD_FILE..."
-            curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
-            log_message "$DOWNLOAD_FILE downloaded successfully."
-        else
-            log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
-            exit 1
-        fi
-    else
-        log_message "No internet connection. Using a local version of MariaDB ODBC driver."
-        cp "$LOCAL_MARIADB_PACKAGE_PATH" "$TARGET_INSTALLATION_PATH/"
-    fi
-}
-
 # Function to update repositories
 update_repositories() {
     if command -v apt &> /dev/null; then
@@ -150,21 +109,41 @@ check_jq_installed() {
     fi
 }
 
-# Function to download the latest version of MariaDB ODBC driver or use local version
+# Function to detect Linux distribution and version
 download_latest_or_local_mariadb_odbc() {
     check_jq_installed
+    detect_linux_distribution  # Asegúrate de que esta función está disponible y es correcta
     if check_internet_connection; then
         MARIADB_ODBC_VERSION=$(curl -s https://api.github.com/repos/mariadb-corporation/mariadb-connector-odbc/tags | jq -r '.[] | .name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-release)?$' | sort -V | tail -n 1)
-        VERSION_FILTER=$(echo $MARIADB_ODBC_VERSION | cut -d. -f1,2)
+        VERSION_FILTER=$(echo "$MARIADB_ODBC_VERSION" | cut -d. -f1,2)
         PATH_HTML_1=$(curl -s https://dlm.mariadb.com/browse/odbc_connector/ | awk -v target="$TARGET_VERSION" -v filter="$VERSION_FILTER" -F'["/]' '$0 ~ filter && $5 ~ target {print $5; exit}')
-        PATH_HTML_2=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/" | grep -oP 'href="/browse/odbc_connector/'"$PATH_HTML_1"'/\K\d+' | grep "$MARIADB_ODBC_VERSION" | head -n 1)
+        PATH_HTML_2=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/" | grep -oP 'href="/browse/odbc_connector/'"$PATH_HTML_1"'/\K\d+' | grep -oP '\d+' | sort -n | tail -n 1)
         FILE_LIST=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/")
 
-        log_message "Downloading MariaDB ODBC driver version $MARIADB_ODBC_VERSION..."
+        log_message "Downloading MariaDB ODBC driver version $MARIADB_ODBC_VERSION for $LINUX_DISTRIBUTION $LINUX_VERSION..."
 
-        
+        # Agregamos lógica para seleccionar el archivo correcto según el sistema operativo
+        case $LINUX_DISTRIBUTION in
+            "ubuntu")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
+                ;;
+            "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
+                ;;
+            *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                exit 1
+                ;;
+        esac
 
-        log_message "MariaDB ODBC driver version $MARIADB_ODBC_VERSION downloaded successfully."
+        if [ -n "$DOWNLOAD_FILE" ]; then
+            log_message "Downloading $DOWNLOAD_FILE..."
+            curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
+            log_message "$DOWNLOAD_FILE downloaded successfully."
+        else
+            log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
+            exit 1
+        fi
     else
         log_message "No internet connection. Using a local version of MariaDB ODBC driver."
         cp "$LOCAL_MARIADB_PACKAGE_PATH" "$TARGET_INSTALLATION_PATH/"
