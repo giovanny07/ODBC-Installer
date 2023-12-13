@@ -329,16 +329,38 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
                 ;;
             "postgresql")
                 if [ "${POSTGRESQL_VERSIONS[$i]}" ]; then
-                    install_package_if_not_present "unixODBC"
-                    install_package_if_not_present "unixodbc"
+                    detect_linux_distribution
+                    case $LINUX_DISTRIBUTION in
+                        "ubuntu")
+                            install_package_if_not_present "unixodbc"
+                            ;;
+                        "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                            install_package_if_not_present "unixODBC"
+                            ;;
+                        *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                            log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                            exit 1
+                            ;;
+                    esac
                 else
                     log_message "No version specified for PostgreSQL ODBC driver. Using a default version or display an error message."
                 fi
                 ;;
             "oracledb")
                 if [ "${ORACLEDB_VERSIONS[$i]}" ]; then
-                    install_package_if_not_present "unixODBC"
-                    install_package_if_not_present "unixodbc"
+                    detect_linux_distribution
+                    case $LINUX_DISTRIBUTION in
+                        "ubuntu")
+                            install_package_if_not_present "unixodbc"
+                            ;;
+                        "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                            install_package_if_not_present "unixODBC"
+                            ;;
+                        *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                            log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                            exit 1
+                            ;;
+                    esac
                 else
                     log_message "No version specified for OracleDB ODBC driver. Using a default version or display an error message."
                 fi
