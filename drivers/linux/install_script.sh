@@ -149,6 +149,7 @@ download_latest_or_local_mariadb_odbc() {
 
         log_message "Downloading MariaDB ODBC driver version $MARIADB_ODBC_VERSION..."
 
+        
 
         log_message "MariaDB ODBC driver version $MARIADB_ODBC_VERSION downloaded successfully."
     else
