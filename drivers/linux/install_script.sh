@@ -14,12 +14,13 @@ TARGET_INSTALLATION_PATH="/var/lib/zabbix"
 
 # Function for displaying help
 display_help() {
-    echo "Usage: $0 [OPTIONS]"
+    script_name=$(basename "$0")
+    echo "Usage: $script_name [OPTIONS]"
     echo "Options:"
     echo "  --remove PACKAGE_NAME   Remove the specified package."
     echo "  --install PACKAGE_NAME  Install the specified package."
-    echo "  --install-db-engines    Install selected database engines.You can specify the version you want to install"
-    echo "                          Example: $0 --install-db-engines mariadb 3.2.0 postgresql 12.5 oracledb 19.3"
+    echo "  --install-db-engines    Install selected database engines. You can specify the version you want to install"
+    echo "                          Example: $script_name --install-db-engines mariadb 3.2.0 postgresql 12.5 oracledb 19.3"
     echo "  -h, --help              Display this help message."
     exit 0
 }
@@ -109,8 +110,37 @@ check_jq_installed() {
     fi
 }
 
+#Function to detect Linux distribution and version
+detect_linux_distribution() {
+    log_message "Detecting Linux distribution..."
+    log_message "Detecting Linux distribution and version..."
+    if [ -f "/etc/os-release" ]; then
+        . "/etc/os-release"
+        LINUX_DISTRIBUTION=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
+        log_message "Detected Linux distribution: $LINUX_DISTRIBUTION"
+
+        case $LINUX_DISTRIBUTION in
+            "ubuntu")
+                LINUX_VERSION=$UBUNTU_CODENAME
+                ;;
+            "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                LINUX_VERSION=$(echo "$VERSION_ID" | cut -d '.' -f 1)
+                ;;
+            *)
+                log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                exit 1
+                ;;
+        esac
+
+        log_message "Detected Linux distribution: $LINUX_DISTRIBUTION $LINUX_VERSION"
+    else
+        log_message "Unable to detect Linux distribution."
+        exit 1
+    fi
+}
+
 # Function to detect Linux distribution and version
-download_latest_or_local_mariadb_odbc() {
+download_latest_mariadb_odbc() {
     check_jq_installed
     detect_linux_distribution  # Asegúrate de que esta función está disponible y es correcta
     if check_internet_connection; then
@@ -152,21 +182,43 @@ download_latest_or_local_mariadb_odbc() {
 
 # Function to download a specific version of MariaDB ODBC driver
 download_specific_mariadb_version() {
-    MARIADB_ODBC_VERSION=$1
-    DOWNLOAD_URL="https://github.com/mariadb-corporation/mariadb-connector-odbc/archive/refs/tags/${MARIADB_ODBC_VERSION}.zip"
-    
-    log_message "Downloading MariaDB ODBC driver version $MARIADB_ODBC_VERSION..."
+    check_jq_installed
+    detect_linux_distribution  # Asegúrate de que esta función está disponible y es correcta
+    if check_internet_connection; then
+        MARIADB_ODBC_VERSION=$1
+        VERSION_FILTER=$(echo "$MARIADB_ODBC_VERSION" | cut -d. -f1,2)
+        PATH_HTML_1=$(curl -s https://dlm.mariadb.com/browse/odbc_connector/ | awk -v target="$TARGET_VERSION" -v filter="$VERSION_FILTER" -F'["/]' '$0 ~ filter && $5 ~ target {print $5; exit}')
+        PATH_HTML_2=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/" | grep -oP 'href="/browse/odbc_connector/'"$PATH_HTML_1"'/\K\d+' | grep -oP '\d+' | sort -n | tail -n 1)
+        FILE_LIST=$(curl -s "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/")
 
-    if command -v wget &> /dev/null; then
-        wget -P "$TARGET_INSTALLATION_PATH" "$DOWNLOAD_URL"
-    elif command -v curl &> /dev/null; then
-        curl -L "$DOWNLOAD_URL" -o "$TARGET_INSTALLATION_PATH/${MARIADB_ODBC_VERSION}.zip"
+        log_message "Downloading MariaDB ODBC driver version $MARIADB_ODBC_VERSION for $LINUX_DISTRIBUTION $LINUX_VERSION..."
+
+        # Agregamos lógica para seleccionar el archivo correcto según el sistema operativo
+        case $LINUX_DISTRIBUTION in
+            "ubuntu")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
+                ;;
+            "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
+                ;;
+            *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                exit 1
+                ;;
+        esac
+
+        if [ -n "$DOWNLOAD_FILE" ]; then
+            log_message "Downloading $DOWNLOAD_FILE..."
+            curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
+            log_message "$DOWNLOAD_FILE downloaded successfully."
+        else
+            log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
+            exit 1
+        fi
     else
-        log_message "Neither 'wget' nor 'curl' is available. Please install one of them."
-        exit 1
+        log_message "No internet connection. Using a local version of MariaDB ODBC driver."
+        cp "$LOCAL_MARIADB_PACKAGE_PATH" "$TARGET_INSTALLATION_PATH/"
     fi
-
-    log_message "MariaDB ODBC driver version $MARIADB_ODBC_VERSION downloaded successfully."
 }
 
 # Parse command line options
@@ -229,6 +281,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+
 # Install selected database engines
 if [ ${#DB_ENGINES[@]} -gt 0 ]; then
     for ((i=0; i<${#DB_ENGINES[@]}; i++)); do
@@ -240,7 +293,7 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
                     download_specific_mariadb_version "${MARIADB_VERSIONS[$i]}"
                 else
                     log_message "No version specified for MariaDB ODBC driver. Using a default version or display an error message."
-                    download_latest_or_local_mariadb_odbc
+                    download_latest_mariadb_odbc
                 fi
                 ;;
             "postgresql")
