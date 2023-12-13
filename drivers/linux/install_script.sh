@@ -168,11 +168,18 @@ download_latest_mariadb_odbc() {
         BASENAME_FILE=$(basename "$DOWNLOAD_FILE")
         if [ -n "$BASENAME_FILE" ]; then
             log_message "Selected download file: $BASENAME_FILE"
-            log_message "Downloading $DOWNLOAD_FILE..."
-            curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
-            log_message "$BASENAME_FILE downloaded successfully."
 
-            cp "$BASENAME_FILE" "$TARGET_INSTALLATION_PATH/"
+            if [ -e "$TARGET_INSTALLATION_PATH/$BASENAME_FILE" ]; then
+                log_message "$BASENAME_FILE already exists in $TARGET_INSTALLATION_PATH. Skipping download."
+            else
+                log_message "Downloading $DOWNLOAD_FILE..."
+                curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
+                log_message "$BASENAME_FILE downloaded successfully."
+
+                log_message "Copying $BASENAME_FILE to $TARGET_INSTALLATION_PATH..."
+                cp "$BASENAME_FILE" "$TARGET_INSTALLATION_PATH/"
+                log_message "Copy complete."
+            fi
         else
             log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
             exit 1
@@ -212,11 +219,18 @@ download_specific_mariadb_version() {
         BASENAME_FILE=$(basename "$DOWNLOAD_FILE")
         if [ -n "$BASENAME_FILE" ]; then
             log_message "Selected download file: $BASENAME_FILE"
-            log_message "Downloading $DOWNLOAD_FILE..."
-            curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
-            log_message "$BASENAME_FILE downloaded successfully."
 
-            cp "$BASENAME_FILE" "$TARGET_INSTALLATION_PATH/"
+            if [ -e "$TARGET_INSTALLATION_PATH/$BASENAME_FILE" ]; then
+                log_message "$BASENAME_FILE already exists in $TARGET_INSTALLATION_PATH. Skipping download."
+            else
+                log_message "Downloading $DOWNLOAD_FILE..."
+                curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
+                log_message "$BASENAME_FILE downloaded successfully."
+
+                log_message "Copying $BASENAME_FILE to $TARGET_INSTALLATION_PATH..."
+                cp "$BASENAME_FILE" "$TARGET_INSTALLATION_PATH/"
+                log_message "Copy complete."
+            fi
         else
             log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
             exit 1
@@ -323,7 +337,19 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
                     esac
                     download_specific_mariadb_version "${MARIADB_VERSIONS[$i]}"
                 else
-                    log_message "No version specified for MariaDB ODBC driver. Using a default version or display an error message."
+                    log_message "No version specified for MariaDB ODBC driver. Using a default version."
+                    case $LINUX_DISTRIBUTION in
+                        "ubuntu")
+                            install_package_if_not_present "unixodbc"
+                            ;;
+                        "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                            install_package_if_not_present "unixODBC"
+                            ;;
+                        *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                            log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                            exit 1
+                            ;;
+                    esac
                     download_latest_mariadb_odbc
                 fi
                 ;;
@@ -343,7 +369,19 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
                             ;;
                     esac
                 else
-                    log_message "No version specified for PostgreSQL ODBC driver. Using a default version or display an error message."
+                    log_message "No version specified for PostgreSQL ODBC driver. Using a default version."
+                    case $LINUX_DISTRIBUTION in
+                        "ubuntu")
+                            install_package_if_not_present "unixodbc"
+                            ;;
+                        "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                            install_package_if_not_present "unixODBC"
+                            ;;
+                        *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                            log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                            exit 1
+                            ;;
+                    esac
                 fi
                 ;;
             "oracledb")
@@ -362,7 +400,19 @@ if [ ${#DB_ENGINES[@]} -gt 0 ]; then
                             ;;
                     esac
                 else
-                    log_message "No version specified for OracleDB ODBC driver. Using a default version or display an error message."
+                    log_message "No version specified for OracleDB ODBC driver. Using a default version."
+                    case $LINUX_DISTRIBUTION in
+                        "ubuntu")
+                            install_package_if_not_present "unixodbc"
+                            ;;
+                        "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                            install_package_if_not_present "unixODBC"
+                            ;;
+                        *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                            log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                            exit 1
+                            ;;
+                    esac
                 fi
                 ;;
             *)
