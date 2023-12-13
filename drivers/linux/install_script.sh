@@ -8,7 +8,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Define global variables
 LOG_FILE="$SCRIPT_DIR/install_log.log"
-LOCAL_MARIADB_PACKAGE_PATH="$SCRIPT_DIR/3.2.0.tar.gz"
+LOCAL_MARIADB_PACKAGE_PATH="$SCRIPT_DIR"
 TARGET_INSTALLATION_PATH="/var/lib/zabbix"
 
 
@@ -67,9 +67,9 @@ install_package_if_not_present() {
     if ! command -v $PACKAGE_NAME &> /dev/null; then
         log_message "$PACKAGE_NAME not found. Installing..."
         if command -v apt &> /dev/null; then
-            sudo apt-get install $PACKAGE_NAME
+            sudo apt-get install $PACKAGE_NAME -y
         elif command -v yum &> /dev/null; then
-            sudo yum install $PACKAGE_NAME
+            sudo yum install $PACKAGE_NAME -y
         else
             log_message "Unsupported package manager. Please add the necessary checks for your package manager."
             exit 1
@@ -155,30 +155,33 @@ download_latest_mariadb_odbc() {
         # Agregamos lógica para seleccionar el archivo correcto según el sistema operativo
         case $LINUX_DISTRIBUTION in
             "ubuntu")
-                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -oE 'href="([^"]+\.tar\.gz)"' | sed -E 's/href="([^"]+)"/\1/' | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
                 ;;
             "rocky" | "almalinux" | "rhel" | "ol" | "centos")
-                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -oE 'href="([^"]+\.tar\.gz)"' | sed -E 's/href="([^"]+)"/\1/' | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
                 ;;
             *)  # Añade casos adicionales para otras distribuciones según sea necesario
                 log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
                 exit 1
                 ;;
         esac
-
-        if [ -n "$DOWNLOAD_FILE" ]; then
+        BASENAME_FILE=$(basename "$DOWNLOAD_FILE")
+        if [ -n "$BASENAME_FILE" ]; then
+            log_message "Selected download file: $BASENAME_FILE"
             log_message "Downloading $DOWNLOAD_FILE..."
             curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
-            log_message "$DOWNLOAD_FILE downloaded successfully."
+            log_message "$BASENAME_FILE downloaded successfully."
+
+            cp "$BASENAME_FILE" "$TARGET_INSTALLATION_PATH/"
         else
             log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
             exit 1
         fi
     else
         log_message "No internet connection. Using a local version of MariaDB ODBC driver."
-        cp "$LOCAL_MARIADB_PACKAGE_PATH" "$TARGET_INSTALLATION_PATH/"
     fi
 }
+
 
 # Function to download a specific version of MariaDB ODBC driver
 download_specific_mariadb_version() {
@@ -196,28 +199,30 @@ download_specific_mariadb_version() {
         # Agregamos lógica para seleccionar el archivo correcto según el sistema operativo
         case $LINUX_DISTRIBUTION in
             "ubuntu")
-                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -oE 'href="([^"]+\.tar\.gz)"' | sed -E 's/href="([^"]+)"/\1/' | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-ubuntu-$LINUX_VERSION-amd64.tar.gz")
                 ;;
             "rocky" | "almalinux" | "rhel" | "ol" | "centos")
-                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
+                DOWNLOAD_FILE=$(echo "$FILE_LIST" | grep -oE 'href="([^"]+\.tar\.gz)"' | sed -E 's/href="([^"]+)"/\1/' | grep -E "mariadb-connector-odbc-$MARIADB_ODBC_VERSION-rhel$LINUX_VERSION-amd64.tar.gz")
                 ;;
             *)  # Añade casos adicionales para otras distribuciones según sea necesario
                 log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
                 exit 1
                 ;;
         esac
-
-        if [ -n "$DOWNLOAD_FILE" ]; then
+        BASENAME_FILE=$(basename "$DOWNLOAD_FILE")
+        if [ -n "$BASENAME_FILE" ]; then
+            log_message "Selected download file: $BASENAME_FILE"
             log_message "Downloading $DOWNLOAD_FILE..."
             curl -LO "https://dlm.mariadb.com/browse/odbc_connector/$PATH_HTML_1/$PATH_HTML_2/$DOWNLOAD_FILE"
-            log_message "$DOWNLOAD_FILE downloaded successfully."
+            log_message "$BASENAME_FILE downloaded successfully."
+
+            cp "$BASENAME_FILE" "$TARGET_INSTALLATION_PATH/"
         else
             log_message "No suitable download file found for $LINUX_DISTRIBUTION $LINUX_VERSION."
             exit 1
         fi
     else
         log_message "No internet connection. Using a local version of MariaDB ODBC driver."
-        cp "$LOCAL_MARIADB_PACKAGE_PATH" "$TARGET_INSTALLATION_PATH/"
     fi
 }
 
@@ -245,23 +250,37 @@ while [[ $# -gt 0 ]]; do
                     "mariadb")
                         DB_ENGINES+=("mariadb")
                         shift
-                        MARIADB_VERSIONS+=("$1")
-                        log_message "Adding MariaDB to the list of database engines."
-                        shift
+                        if [ $# -gt 0 ] && [[ ! $1 == -* ]]; then
+                            MARIADB_VERSIONS+=("$1")
+                            log_message "Adding MariaDB version: $1"
+                            shift
+                        else
+                            log_message "No version specified for MariaDB. Using the latest version."
+                        fi
                         ;;
                     "postgresql")
                         DB_ENGINES+=("postgresql")
                         shift
-                        POSTGRESQL_VERSIONS+=("$1")
-                        log_message "Adding PostgreSQL to the list of database engines."
-                        shift
+                        if [ $# -gt 0 ] && [[ ! $1 == -* ]]; then
+                            POSTGRESQL_VERSIONS+=("$1")
+                            log_message "Adding PostgreSQL version: $1"
+                            shift
+                        else
+                            log_message "No version specified for PostgreSQL. Display an error message or use a default version."
+                        fi
+                        # Add logic for PostgreSQL
                         ;;
                     "oracledb")
                         DB_ENGINES+=("oracledb")
                         shift
-                        ORACLEDB_VERSIONS+=("$1")
-                        log_message "Adding OracleDB to the list of database engines."
-                        shift
+                        if [ $# -gt 0 ] && [[ ! $1 == -* ]]; then
+                            ORACLEDB_VERSIONS+=("$1")
+                            log_message "Adding OracleDB version: $1"
+                            shift
+                        else
+                            log_message "No version specified for OracleDB. Display an error message or use a default version."
+                        fi
+                        # Add logic for OracleDB
                         ;;
                     *)
                         log_message "Unsupported database engine specified: $1"
@@ -270,7 +289,7 @@ while [[ $# -gt 0 ]]; do
                 esac
             done
             ;;
-        -h | --help)
+        --h | --help)
             display_help
             ;;
         *)
@@ -282,14 +301,26 @@ while [[ $# -gt 0 ]]; do
 done
 
 
+
 # Install selected database engines
 if [ ${#DB_ENGINES[@]} -gt 0 ]; then
     for ((i=0; i<${#DB_ENGINES[@]}; i++)); do
         case ${DB_ENGINES[$i]} in
             "mariadb")
                 if [ "${MARIADB_VERSIONS[$i]}" ]; then
-                    install_package_if_not_present "unixODBC"
-                    install_package_if_not_present "unixodbc"
+                    detect_linux_distribution
+                    case $LINUX_DISTRIBUTION in
+                        "ubuntu")
+                            install_package_if_not_present "unixodbc"
+                            ;;
+                        "rocky" | "almalinux" | "rhel" | "ol" | "centos")
+                            install_package_if_not_present "unixODBC"
+                            ;;
+                        *)  # Añade casos adicionales para otras distribuciones según sea necesario
+                            log_message "Unsupported Linux distribution: $LINUX_DISTRIBUTION"
+                            exit 1
+                            ;;
+                    esac
                     download_specific_mariadb_version "${MARIADB_VERSIONS[$i]}"
                 else
                     log_message "No version specified for MariaDB ODBC driver. Using a default version or display an error message."
