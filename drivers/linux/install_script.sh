@@ -139,7 +139,7 @@ detect_linux_distribution() {
     fi
 }
 
-# Function to detect Linux distribution and version
+# Function to download latest odbc's mariadb version
 download_latest_mariadb_odbc() {
     check_jq_installed
     detect_linux_distribution  # Asegúrate de que esta función está disponible y es correcta
